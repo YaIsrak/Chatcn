@@ -12,10 +12,10 @@ export async function POST(req: Request) {
 		messages: [
 			{
 				role: 'user',
-				content: body.prompt,
+				content: body.values.prompt,
 			},
 		],
 	});
 
-	return NextResponse.json(response.choices[0].message.content);
+	return NextResponse.json(response);
 }

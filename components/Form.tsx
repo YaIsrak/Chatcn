@@ -1,18 +1,30 @@
 'use client';
-
+import { Massage, gptMessage } from '@/type.typings';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 import { Button } from './ui/button';
+import { Form, FormControl, FormField, FormItem, FormMessage } from './ui/form';
 import { Input } from './ui/input';
+import { toast } from './ui/use-toast';
 
-export default function Form() {
-	const [msg, setMsg] = useState('');
+export default function ChatGPT() {
+	const [massage, setMassage] = useState<Massage>();
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState(false);
 
-	const onSubmit = async (e: any) => {
-		e.preventDefault();
-		const formData = new FormData(e.target);
-		const prompt = formData.get('prompt');
+	const form = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			prompt: '',
+		},
+	});
+
+	async function onSubmit(values: z.infer<typeof formSchema>) {
+		toast({
+			title: 'Loading...',
+		});
 		setLoading(true);
 
 		await fetch('api/createChat', {
@@ -21,39 +33,85 @@ export default function Form() {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				prompt,
+				values,
 			}),
 		})
 			.then((response) => response.json())
-			.then((data) => {
-				setMsg(data);
+			.then((data: gptMessage) => {
+				setMassage(data.choices[0]);
+				toast({
+					title: 'Generated!',
+				});
 				setLoading(false);
 			})
 			.catch((error) => {
+				setError(error);
 				setLoading(false);
-				error && setError(true);
+				toast({
+					title: 'There is an error',
+					variant: 'destructive',
+				});
 			});
-	};
+	}
 
 	return (
 		<>
-			<form className='flex gap-2' onSubmit={onSubmit}>
-				<Input name='prompt' placeholder='Enter Prompt Here' type='text' />
-				<Button type='submit' disabled={loading}>
-					Generate
-				</Button>
-			</form>
+			<Form {...form}>
+				<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-2'>
+					<FormField
+						control={form.control}
+						name='prompt'
+						render={({ field }) => (
+							<FormItem>
+								<FormControl>
+									<Input placeholder='Enter Prompt Here...' {...field} className='' />
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+					<Button type='submit'>Submit</Button>
+				</form>
+			</Form>
 
+			{/* Response */}
 			<div className='py-12'>
-				{msg && !error && !loading && (
-					<>
-						<h5>AI:</h5>
-						<h3>{msg}</h3>
-					</>
-				)}
 				{loading && <h3>Loading...</h3>}
-				{error && <h3>There is an error</h3>}
+
+				{massage && !error && !loading && (
+					<div>
+						<h3>
+							AI
+							<span className='text-foreground/50 text-sm italic'>
+								({massage.message.role})
+							</span>
+							:{' '}
+						</h3>
+						<div className='space-y-2 mt-4 bg-foreground/10 p-5 rounded-xl'>
+							{massage.message.content.split('\n').map((item, i) => (
+								<p key={i}>{item}</p>
+							))}
+						</div>
+					</div>
+				)}
+
+				{/* Error Bounding */}
+				{error && (
+					<div className='text-red-500'>
+						<h3>There is an error</h3>
+						<p>Check console</p>
+						<p>
+							Right click {'->'} Inspect {'->'} Console
+						</p>
+					</div>
+				)}
 			</div>
 		</>
 	);
 }
+
+const formSchema = z.object({
+	prompt: z.string().min(2, {
+		message: 'Prompt must be at least 2 characters.',
+	}),
+});

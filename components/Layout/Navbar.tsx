@@ -52,7 +52,7 @@ export function NavBrand() {
 			href='/'
 			className='text-2xl no-underline font-semibold text-foreground'
 		>
-			<p>BoilerPlater</p>
+			<p>ChatCn</p>
 		</Link>
 	);
 }

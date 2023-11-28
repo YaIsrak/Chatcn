@@ -1,5 +1,6 @@
 import Nav from '@/components/Layout/Nav';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import { Inter as FontSans } from 'next/font/google';
@@ -34,6 +35,7 @@ export default function RootLayout({
 						<Nav />
 					</Suspense>
 					<main>{children}</main>
+					<Toaster />
 				</ThemeProvider>
 			</body>
 		</html>
